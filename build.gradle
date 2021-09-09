@@ -241,6 +241,26 @@ afterEvaluate {
 
 test {
     systemProperty 'tests.security.manager', 'false'
+
+    // By default include all tests, but if test.suite is defined then we only want to run tests specifically for that group
+    // We will support splitting our tests into indexstatemanagement, refreshanalyzer, rollup, transform, and indexmanagement
+    def testSuite = System.getProperty("test.suite")
+    if (testSuite != null) {
+        if (testSuite == "indexmanagement") {
+            // Only run the top level indexmanagement/generic tests related to the index management plugin
+            filter {
+                excludeTestsMatching "org.opensearch.indexmanagement.indexstatemanagement.*"
+                excludeTestsMatching "org.opensearch.indexmanagement.refreshanalyzer.*"
+                excludeTestsMatching "org.opensearch.indexmanagement.rollup.*"
+                excludeTestsMatching "org.opensearch.indexmanagement.transform.*"
+            }
+        } else {
+            // otherwise only run the the tests of the feature defined, i.e. ism, refreshanalyzer, rollup, transform
+            filter {
+                includeTestsMatching("org.opensearch.indexmanagement.${System.getProperty("test.suite")}.*")
+            }
+        }
+    }
 }
 
 File repo = file("$buildDir/testclusters/repo")
@@ -314,6 +334,26 @@ integTest {
     // TODO: raise issue in Core, this is because of the test framework
     if (System.getProperty("tests.clustername") != null) {
         exclude 'org/opensearch/indexmanagement/indexstatemanagement/MetadataRegressionIT.class'
+    }
+
+    // By default include all tests, but if test.suite is defined then we only want to run tests specifically for that group
+    // We will support splitting our tests into indexstatemanagement, refreshanalyzer, rollup, transform, and indexmanagement
+    def testSuite = System.getProperty("test.suite")
+    if (testSuite != null) {
+        if (testSuite == "indexmanagement") {
+            // Only run the top level indexmanagement/generic tests related to the index management plugin
+            filter {
+                excludeTestsMatching "org.opensearch.indexmanagement.indexstatemanagement.*"
+                excludeTestsMatching "org.opensearch.indexmanagement.refreshanalyzer.*"
+                excludeTestsMatching "org.opensearch.indexmanagement.rollup.*"
+                excludeTestsMatching "org.opensearch.indexmanagement.transform.*"
+            }
+        } else {
+            // otherwise only run the the tests of the feature defined, i.e. ism, refreshanalyzer, rollup, transform
+            filter {
+                includeTestsMatching("org.opensearch.indexmanagement.${System.getProperty("test.suite")}.*")
+            }
+        }
     }
 }
 
