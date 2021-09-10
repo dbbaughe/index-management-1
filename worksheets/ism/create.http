@@ -46,3 +46,59 @@ Content-Type: application/json
     ]
   }
 }
+
+###
+
+PUT localhost:9200/_opendistro/_ism/policies/test
+Content-Type: application/json
+
+{
+  "policy": {
+    "description": "ingesting logs",
+    "default_state": "ingest",
+    "states": [
+      {
+        "name": "ingest",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "search"
+          }
+        ]
+      },
+      {
+        "name": "search",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "ingest"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+###
+
+PUT localhost:9200/test-index
+Content-Type: application/json
+
+###
+
+POST localhost:9200/_plugins/_ism/add/test-index
+Content-Type: application/json
+
+{
+  "policy_id": "test"
+}
+
+###
+
+GET localhost:9200/_plugins/_ism/explain/test-index
+Content-Type: application/json
+
+###
+
+GET localhost:9200/_plugins/_ism/execute/test-index
+Content-Type: application/json

@@ -385,20 +385,42 @@ abstract class IndexStateManagementRestTestCase : IndexManagementRestTestCase() 
                 }
             }
         }
-        val intervalSchedule = (update.jobSchedule as IntervalSchedule)
-        val millis = Duration.of(intervalSchedule.interval.toLong(), intervalSchedule.unit).minusSeconds(2).toMillis()
-        val startTimeMillis = desiredStartTimeMillis ?: Instant.now().toEpochMilli() - millis
-        val waitForActiveShards = if (isMultiNode) "all" else "1"
-        val response = client().makeRequest(
-            "POST", "$INDEX_MANAGEMENT_INDEX/_update/${update.id}?wait_for_active_shards=$waitForActiveShards",
-            StringEntity(
-                "{\"doc\":{\"managed_index\":{\"schedule\":{\"interval\":{\"start_time\":" +
-                    "\"$startTimeMillis\"}}}}}",
-                APPLICATION_JSON
+        if (false) {
+            val intervalSchedule = (update.jobSchedule as IntervalSchedule)
+            val millis = Duration.of(intervalSchedule.interval.toLong(), intervalSchedule.unit).minusSeconds(2).toMillis()
+            val startTimeMillis = desiredStartTimeMillis ?: Instant.now().toEpochMilli() - millis
+            val waitForActiveShards = if (isMultiNode) "all" else "1"
+            val response = client().makeRequest(
+                "POST", "$INDEX_MANAGEMENT_INDEX/_update/${update.id}?wait_for_active_shards=$waitForActiveShards",
+                StringEntity(
+                    "{\"doc\":{\"managed_index\":{\"schedule\":{\"interval\":{\"start_time\":" +
+                        "\"$startTimeMillis\"}}}}}",
+                    APPLICATION_JSON
+                )
             )
-        )
+        }
+        if (true) {
+            // if we execute, then the waitfor steps will see the result, but the lock hasnt been released yet because its going to be done async at end
+            // but then the next execute happens and cant lock, so we gotta ensure the lock is gone
+            val response = client().makeRequest("POST", "_plugins/_ism/execute/${update.index}")
+            assertEquals("Request failed", RestStatus.OK, response.restStatus())
+            // It's also possible right after calling execute... the lock hasn't been TAKEN yet, so we need to first validate we see released: false
+            // and then released true?
+            // can it be flaky...?
+            waitFor {
+                val lockResponse = client().makeRequest("GET", ".opendistro-job-scheduler-lock/_doc/$INDEX_MANAGEMENT_INDEX-${update.id}")
+                val lockDoc = GetResponse.fromXContent(createParser(jsonXContent, lockResponse.entity.content))
+                val source = lockDoc.sourceAsMap
+                assertFalse(source["released"] as Boolean)
+            }
 
-        assertEquals("Request failed", RestStatus.OK, response.restStatus())
+            waitFor {
+                val lockResponse = client().makeRequest("GET", ".opendistro-job-scheduler-lock/_doc/$INDEX_MANAGEMENT_INDEX-${update.id}")
+                val lockDoc = GetResponse.fromXContent(createParser(jsonXContent, lockResponse.entity.content))
+                val source = lockDoc.sourceAsMap
+                assertTrue(source["released"] as Boolean)
+            }
+        }
     }
 
     protected fun updateManagedIndexConfigPolicySeqNo(update: ManagedIndexConfig) {

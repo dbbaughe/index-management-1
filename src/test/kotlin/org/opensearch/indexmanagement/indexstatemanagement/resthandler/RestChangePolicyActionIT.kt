@@ -453,7 +453,6 @@ class RestChangePolicyActionIT : IndexStateManagementRestTestCase() {
         val (firstIndex) = createIndex("first_index", policy.id)
 
         val firstManagedIndexConfig = getExistingManagedIndexConfig(firstIndex)
-
         // speed up to first execution where we initialize the policy on the job
         updateManagedIndexConfigStartTime(firstManagedIndexConfig)
 

@@ -61,6 +61,7 @@ import org.opensearch.indexmanagement.indexstatemanagement.model.Policy
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestAddPolicyAction
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestChangePolicyAction
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestDeletePolicyAction
+import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestExecuteManagedIndexAction
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestExplainAction
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestGetPolicyAction
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestIndexPolicyAction
@@ -74,6 +75,8 @@ import org.opensearch.indexmanagement.indexstatemanagement.transport.action.chan
 import org.opensearch.indexmanagement.indexstatemanagement.transport.action.changepolicy.TransportChangePolicyAction
 import org.opensearch.indexmanagement.indexstatemanagement.transport.action.deletepolicy.DeletePolicyAction
 import org.opensearch.indexmanagement.indexstatemanagement.transport.action.deletepolicy.TransportDeletePolicyAction
+import org.opensearch.indexmanagement.indexstatemanagement.transport.action.executemanagedindex.ExecuteManagedIndexAction
+import org.opensearch.indexmanagement.indexstatemanagement.transport.action.executemanagedindex.TransportExecuteManagedIndexAction
 import org.opensearch.indexmanagement.indexstatemanagement.transport.action.explain.ExplainAction
 import org.opensearch.indexmanagement.indexstatemanagement.transport.action.explain.TransportExplainAction
 import org.opensearch.indexmanagement.indexstatemanagement.transport.action.getpolicy.GetPoliciesAction
@@ -282,7 +285,8 @@ class IndexManagementPlugin : JobSchedulerExtension, NetworkPlugin, ActionPlugin
             RestDeleteTransformAction(),
             RestExplainTransformAction(),
             RestStartTransformAction(),
-            RestStopTransformAction()
+            RestStopTransformAction(),
+            RestExecuteManagedIndexAction()
         )
     }
 
@@ -458,7 +462,8 @@ class IndexManagementPlugin : JobSchedulerExtension, NetworkPlugin, ActionPlugin
             ActionPlugin.ActionHandler(ExplainTransformAction.INSTANCE, TransportExplainTransformAction::class.java),
             ActionPlugin.ActionHandler(StartTransformAction.INSTANCE, TransportStartTransformAction::class.java),
             ActionPlugin.ActionHandler(StopTransformAction.INSTANCE, TransportStopTransformAction::class.java),
-            ActionPlugin.ActionHandler(ManagedIndexAction.INSTANCE, TransportManagedIndexAction::class.java)
+            ActionPlugin.ActionHandler(ManagedIndexAction.INSTANCE, TransportManagedIndexAction::class.java),
+            ActionPlugin.ActionHandler(ExecuteManagedIndexAction.INSTANCE, TransportExecuteManagedIndexAction::class.java),
         )
     }
 

@@ -223,13 +223,14 @@ object ManagedIndexRunner :
             // Attempt to acquire lock
             val lock: LockModel? = context.lockService.suspendUntil { acquireLock(job, context, it) }
             if (lock == null) {
-                logger.debug("Could not acquire lock [${lock?.lockId}] for ${job.index}")
+                logger.info("Could not acquire lock [${lock?.lockId}] for ${job.index}")
             } else {
                 runManagedIndexConfig(job)
                 // Release lock
+                logger.info("releasing lock for job")
                 val released: Boolean = context.lockService.suspendUntil { release(lock, it) }
                 if (!released) {
-                    logger.debug("Could not release lock [${lock.lockId}] for ${job.index}")
+                    logger.info("Could not release lock [${lock.lockId}] for ${job.index}")
                 }
             }
         }
@@ -237,7 +238,7 @@ object ManagedIndexRunner :
 
     @Suppress("ReturnCount", "ComplexMethod", "LongMethod", "ComplexCondition")
     private suspend fun runManagedIndexConfig(managedIndexConfig: ManagedIndexConfig) {
-        logger.debug("Run job for index ${managedIndexConfig.index}")
+        logger.info("Run job for index ${managedIndexConfig.index}")
         // doing a check of local cluster health as we do not want to overload master node with potentially a lot of calls
         if (clusterIsRed()) {
             logger.debug("Skipping current execution of ${managedIndexConfig.index} because of red cluster health")
