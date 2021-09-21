@@ -97,6 +97,7 @@ data class ChangePolicy(
         const val IS_SAFE_FIELD = "is_safe"
         const val USER_FIELD = "user"
 
+        @Suppress("ComplexMethod")
         @JvmStatic
         @Throws(IOException::class)
         fun parse(xcp: XContentParser): ChangePolicy {

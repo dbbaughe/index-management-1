@@ -26,8 +26,6 @@
 
 package org.opensearch.indexmanagement.indexstatemanagement.step.notification
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.apache.logging.log4j.LogManager
 import org.opensearch.client.Client
 import org.opensearch.cluster.service.ClusterService
@@ -35,8 +33,9 @@ import org.opensearch.common.settings.Settings
 import org.opensearch.indexmanagement.indexstatemanagement.model.ManagedIndexMetaData
 import org.opensearch.indexmanagement.indexstatemanagement.model.action.NotificationActionConfig
 import org.opensearch.indexmanagement.indexstatemanagement.model.managedindexmetadata.StepMetaData
-import org.opensearch.indexmanagement.indexstatemanagement.settings.ManagedIndexSettings
 import org.opensearch.indexmanagement.indexstatemanagement.step.Step
+import org.opensearch.indexmanagement.indexstatemanagement.util.publishLegacyNotification
+import org.opensearch.indexmanagement.indexstatemanagement.util.sendNotification
 import org.opensearch.indexmanagement.opensearchapi.convertToMap
 import org.opensearch.script.Script
 import org.opensearch.script.ScriptService
@@ -54,18 +53,20 @@ class AttemptNotificationStep(
     private val logger = LogManager.getLogger(javaClass)
     private var stepStatus = StepStatus.STARTING
     private var info: Map<String, Any>? = null
-    private val hostDenyList = settings.getAsList(ManagedIndexSettings.HOST_DENY_LIST)
 
     override fun isIdempotent() = false
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun execute(): AttemptNotificationStep {
         try {
-            withContext(Dispatchers.IO) {
-                config.destination.publish(null, compileTemplate(config.messageTemplate, managedIndexMetaData), hostDenyList)
+            val compiledMessage = compileTemplate(config.messageTemplate, managedIndexMetaData)
+            managedIndexMetaData.threadContext?.let {
+                config.destination?.buildLegacyBaseMessage(null, compiledMessage)?.publishLegacyNotification(
+                    client, managedIndexMetaData.threadContext
+                )
             }
+            config.channel?.sendNotification(client, CHANNEL_TITLE, managedIndexMetaData, compiledMessage)
 
-            // publish internally throws an error for any invalid responses so its safe to assume if we reach this point it was successful
             // publish and send throws an error for any invalid responses so its safe to assume if we reach this point it was successful
             stepStatus = StepStatus.COMPLETED
             info = mapOf("message" to getSuccessMessage(indexName))
@@ -103,5 +104,6 @@ class AttemptNotificationStep(
     companion object {
         fun getFailedMessage(index: String) = "Failed to send notification [index=$index]"
         fun getSuccessMessage(index: String) = "Successfully sent notification [index=$index]"
+        const val CHANNEL_TITLE = "Index Management-ISM-Notification Action"
     }
 }
