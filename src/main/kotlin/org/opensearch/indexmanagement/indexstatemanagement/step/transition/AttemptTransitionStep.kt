@@ -33,7 +33,10 @@ import org.opensearch.action.admin.indices.stats.IndicesStatsResponse
 import org.opensearch.client.Client
 import org.opensearch.cluster.service.ClusterService
 import org.opensearch.common.unit.ByteSizeValue
+import org.opensearch.common.unit.TimeValue
+import org.opensearch.indexmanagement.indexstatemanagement.model.Conditions
 import org.opensearch.indexmanagement.indexstatemanagement.model.ManagedIndexMetaData
+import org.opensearch.indexmanagement.indexstatemanagement.model.Transition
 import org.opensearch.indexmanagement.indexstatemanagement.model.action.TransitionsActionConfig
 import org.opensearch.indexmanagement.indexstatemanagement.model.managedindexmetadata.StepMetaData
 import org.opensearch.indexmanagement.indexstatemanagement.step.Step
@@ -78,10 +81,14 @@ class AttemptTransitionStep(
             }
 
             val indexCreationDate = clusterService.state().metadata().index(indexName).creationDate
-            val indexCreationDateInstant = Instant.ofEpochMilli(indexCreationDate)
-            if (indexCreationDate == -1L) {
+            val indexAgeTimeValue = if (indexCreationDate == -1L) {
                 logger.warn("$indexName had an indexCreationDate=-1L, cannot use for comparison")
+                // since we cannot use for comparison, we can set it to 0 as minAge will never be <= 0
+                TimeValue.timeValueMillis(0)
+            } else {
+                TimeValue.timeValueMillis(Instant.now().toEpochMilli() - indexCreationDate)
             }
+
             val stepStartTime = getStepStartTime()
             var numDocs: Long? = null
             var indexSize: ByteSizeValue? = null
@@ -105,8 +112,41 @@ class AttemptTransitionStep(
                 indexSize = ByteSizeValue(statsResponse.primaries.getDocs()?.totalSizeInBytes ?: 0)
             }
 
+            val conditions = config.transitions.map { transition ->
+                listOfNotNull(
+                    Transition.STATE_NAME_FIELD to transition.stateName,
+                    transition.conditions?.indexAge?.let {
+                        Conditions.MIN_INDEX_AGE_FIELD to mapOf(
+                            "condition" to it.toString(),
+                            "current" to indexAgeTimeValue.toString(),
+                            "creationDate" to indexCreationDate,
+                        )
+                    },
+                    transition.conditions?.docCount?.let {
+                        Conditions.MIN_DOC_COUNT_FIELD to mapOf(
+                            "condition" to it,
+                            "current" to numDocs
+                        )
+                    },
+                    transition.conditions?.size?.let {
+                        Conditions.MIN_SIZE_FIELD to mapOf(
+                            "condition" to it.toString(),
+                            "current" to indexSize?.toString()
+                        )
+                    },
+                    transition.conditions?.cron?.let {
+                        Conditions.CRON_FIELD to mapOf(
+                            "condition" to mapOf(
+                                "expression" to it
+                            ),
+                            "next" to it.getNextExecutionTime(stepStartTime).toString()
+                        )
+                    }
+                ).toMap()
+            }
+
             // Find the first transition that evaluates to true and get the state to transition to, otherwise return null if none are true
-            stateName = config.transitions.find { it.evaluateConditions(indexCreationDateInstant, numDocs, indexSize, stepStartTime) }?.stateName
+            stateName = config.transitions.find { it.evaluateConditions(indexAgeTimeValue, numDocs, indexSize, stepStartTime) }?.stateName
             val message: String
             val stateName = stateName // shadowed on purpose to prevent var from changing
             if (stateName != null) {
@@ -120,7 +160,7 @@ class AttemptTransitionStep(
                 stepStatus = StepStatus.CONDITION_NOT_MET
                 message = getEvaluatingMessage(indexName)
             }
-            info = mapOf("message" to message)
+            info = mapOf("message" to message, "conditions" to conditions)
         } catch (e: RemoteTransportException) {
             handleException(ExceptionsHelper.unwrapCause(e) as Exception)
         } catch (e: Exception) {

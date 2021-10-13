@@ -1,5 +1,37 @@
 
-PUT localhost:9200/_opendistro/_ism/policies/example
+PUT localhost:9200/_opendistro/_ism/policies/age
+Content-Type: application/json
+
+{
+  "policy": {
+    "description": "ingesting logs",
+    "default_state": "ingest",
+    "states": [
+      {
+        "name": "ingest",
+        "actions": [],
+        "transitions": [
+          {
+            "state_name": "search",
+            "conditions": {
+              "min_index_age": "30m"
+            }
+          }
+        ]
+      },
+      {
+        "name": "search",
+        "actions": [],
+        "transitions": [
+        ]
+      }
+    ]
+  }
+}
+
+###
+
+PUT localhost:9200/_opendistro/_ism/policies/docs
 Content-Type: application/json
 
 {
@@ -10,15 +42,13 @@ Content-Type: application/json
       {
         "name": "ingest",
         "actions": [
-          {
-            "rollover": {
-              "min_doc_count": 5
-            }
-          }
         ],
         "transitions": [
           {
-            "state_name": "search"
+            "state_name": "search",
+            "conditions": {
+              "min_doc_count": "10"
+            }
           }
         ]
       },
@@ -26,22 +56,78 @@ Content-Type: application/json
         "name": "search",
         "actions": [],
         "transitions": [
+        ]
+      }
+    ]
+  }
+}
+
+###
+
+PUT localhost:9200/_opendistro/_ism/policies/size
+Content-Type: application/json
+
+{
+  "policy": {
+    "description": "ingesting logs",
+    "default_state": "ingest",
+    "states": [
+      {
+        "name": "ingest",
+        "actions": [
+        ],
+        "transitions": [
           {
-            "state_name": "delete",
+            "state_name": "search",
             "conditions": {
-              "min_index_age": "5m"
+              "min_size": "30kb"
             }
           }
         ]
       },
       {
-        "name": "delete",
+        "name": "search",
+        "actions": [],
+        "transitions": [
+        ]
+      }
+    ]
+  }
+}
+
+###
+
+PUT localhost:9200/_opendistro/_ism/policies/cron
+Content-Type: application/json
+
+{
+  "policy": {
+    "description": "ingesting logs",
+    "default_state": "ingest",
+    "states": [
+      {
+        "name": "ingest",
         "actions": [
-          {
-            "delete": {}
-          }
+
         ],
-        "transitions": []
+        "transitions": [
+          {
+            "state_name": "search",
+            "conditions": {
+              "cron": {
+                "cron": {
+                  "expression": "* 17 * * * *"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "search",
+        "actions": [],
+        "transitions": [
+        ]
       }
     ]
   }

@@ -227,7 +227,7 @@ fun getSweptManagedIndexSearchRequest(): SearchRequest {
 
 @Suppress("ReturnCount")
 fun Transition.evaluateConditions(
-    indexCreationDate: Instant,
+    indexAgeTimeValue: TimeValue,
     numDocs: Long?,
     indexSize: ByteSizeValue?,
     transitionStartTime: Instant
@@ -240,10 +240,7 @@ fun Transition.evaluateConditions(
     }
 
     if (this.conditions.indexAge != null) {
-        val indexCreationDateMilli = indexCreationDate.toEpochMilli()
-        if (indexCreationDateMilli == -1L) return false // transitions cannot currently be ORd like rollover, so we must return here
-        val elapsedTime = Instant.now().toEpochMilli() - indexCreationDateMilli
-        return this.conditions.indexAge.millis <= elapsedTime
+        return this.conditions.indexAge.millis <= indexAgeTimeValue.millis
     }
 
     if (this.conditions.size != null && indexSize != null) {

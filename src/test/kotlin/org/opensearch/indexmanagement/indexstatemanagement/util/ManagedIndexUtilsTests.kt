@@ -255,7 +255,7 @@ class ManagedIndexUtilsTests : OpenSearchTestCase() {
         assertTrue(
             "No conditions should pass",
             emptyTransition
-                .evaluateConditions(indexCreationDate = Instant.now(), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
+                .evaluateConditions(indexAgeTimeValue = TimeValue.timeValueMillis(Instant.now().toEpochMilli()), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
         )
 
         val timeTransition = Transition(
@@ -265,17 +265,17 @@ class ManagedIndexUtilsTests : OpenSearchTestCase() {
         assertFalse(
             "Index age that is too young should not pass",
             timeTransition
-                .evaluateConditions(indexCreationDate = Instant.now(), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
+                .evaluateConditions(indexAgeTimeValue = TimeValue.timeValueMillis(Instant.now().toEpochMilli()), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
         )
         assertTrue(
             "Index age that is older should pass",
             timeTransition
-                .evaluateConditions(indexCreationDate = Instant.now().minusSeconds(10), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
+                .evaluateConditions(indexAgeTimeValue = TimeValue.timeValueMillis(Instant.now().minusSeconds(10).toEpochMilli()), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
         )
         assertFalse(
             "Index age that is -1L should not pass",
             timeTransition
-                .evaluateConditions(indexCreationDate = Instant.ofEpochMilli(-1L), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
+                .evaluateConditions(indexAgeTimeValue = TimeValue.timeValueMillis(Instant.ofEpochMilli(-1L).toEpochMilli()), numDocs = null, indexSize = null, transitionStartTime = Instant.now())
         )
     }
 
