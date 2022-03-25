@@ -21,7 +21,7 @@ import org.opensearch.indexmanagement.common.model.dimension.Histogram
 import org.opensearch.indexmanagement.common.model.dimension.Terms
 import org.opensearch.indexmanagement.util.IndexUtils
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule
-import org.opensearch.notification.repackage.org.apache.commons.codec.digest.DigestUtils
+// import org.opensearch.notification.repackage.org.apache.commons.codec.digest.DigestUtils
 import java.io.IOException
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -63,7 +63,8 @@ data class ISMRollup(
         val id = sourceIndex + toString()
         val currentTime = Instant.now()
         return Rollup(
-            id = DigestUtils.sha1Hex(id),
+            // TODO: Fix
+            id = id, // DigestUtils.sha1Hex(id),
             seqNo = SequenceNumbers.UNASSIGNED_SEQ_NO,
             primaryTerm = SequenceNumbers.UNASSIGNED_PRIMARY_TERM,
             enabled = true,

@@ -9,8 +9,6 @@ import org.apache.http.entity.ContentType
 import org.apache.http.entity.StringEntity
 import org.junit.Before
 import org.opensearch.OpenSearchParseException
-import org.opensearch.action.ActionRequest
-import org.opensearch.action.ActionResponse
 import org.opensearch.action.admin.cluster.reroute.ClusterRerouteRequest
 import org.opensearch.action.search.SearchResponse
 import org.opensearch.client.Request
@@ -32,10 +30,6 @@ import org.opensearch.indexmanagement.indexstatemanagement.model.ManagedIndexCon
 import org.opensearch.indexmanagement.indexstatemanagement.model.Policy
 import org.opensearch.indexmanagement.indexstatemanagement.resthandler.RestExplainAction
 import org.opensearch.indexmanagement.indexstatemanagement.settings.ManagedIndexSettings
-import org.opensearch.indexmanagement.indexstatemanagement.transport.action.explain.ExplainAction
-import org.opensearch.indexmanagement.indexstatemanagement.transport.action.explain.TransportExplainAction
-import org.opensearch.indexmanagement.indexstatemanagement.transport.action.updateindexmetadata.TransportUpdateManagedIndexMetaDataAction
-import org.opensearch.indexmanagement.indexstatemanagement.transport.action.updateindexmetadata.UpdateManagedIndexMetaDataAction
 import org.opensearch.indexmanagement.indexstatemanagement.util.TOTAL_MANAGED_INDICES
 import org.opensearch.indexmanagement.makeRequest
 import org.opensearch.indexmanagement.opensearchapi.parseWithType
@@ -44,7 +38,6 @@ import org.opensearch.indexmanagement.spi.indexstatemanagement.model.PolicyRetry
 import org.opensearch.indexmanagement.spi.indexstatemanagement.model.StateMetaData
 import org.opensearch.indexmanagement.waitFor
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule
-import org.opensearch.plugins.ActionPlugin
 import org.opensearch.plugins.Plugin
 import org.opensearch.rest.RestRequest
 import org.opensearch.rest.RestStatus
@@ -82,22 +75,6 @@ abstract class IndexStateManagementIntegTestCase : OpenSearchIntegTestCase() {
 
     override fun nodePlugins(): Collection<Class<out Plugin>> {
         return listOf(IndexManagementPlugin::class.java)
-    }
-
-    class TestPlugin : ActionPlugin, Plugin() {
-        override fun getActions(): List<ActionPlugin.ActionHandler<out ActionRequest, out ActionResponse>> {
-            return listOf(
-                ActionPlugin.ActionHandler(
-                    UpdateManagedIndexMetaDataAction.INSTANCE,
-                    TransportUpdateManagedIndexMetaDataAction::class.java
-                ),
-                ActionPlugin.ActionHandler(ExplainAction.INSTANCE, TransportExplainAction::class.java)
-            )
-        }
-    }
-
-    override fun transportClientPlugins(): Collection<Class<out Plugin>> {
-        return listOf(TestPlugin::class.java)
     }
 
     protected fun getIndexMetadata(indexName: String): IndexMetadata {
